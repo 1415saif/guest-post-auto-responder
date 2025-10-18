@@ -1,0 +1,175 @@
+{
+  "name": "Guest post request email automation",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "readStatus": "unread"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -592,
+        -64
+      ],
+      "id": "80cd46a5-a8e5-4152-9c9a-316c23db0290",
+      "name": "Gmail Trigger",
+      "notesInFlow": false,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "aoAQECIvZuGQasAE",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following email message and determine if it is a guest post request.\n\nIf the email is about guest posting (for example: someone asking to publish their article, requesting backlinks, or offering to write content for your site), respond only with the single lowercase word \"yes\".\n\nIf the email is not about guest posting, respond only with the single lowercase word \"no\".\n\nDo not write anything else — no punctuation, no explanation, no extra words.\n\nEmail content:\n{{ $json.snippet }}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -416,
+        -64
+      ],
+      "id": "668b8914-02cc-4912-ace1-9fd98a2994c2",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cbb50460-c634-42d7-898b-59d53bc7f1d3",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -96,
+        -64
+      ],
+      "id": "7225e7e8-7b4a-4efc-aeec-7f531a8ccd90",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Gmail Trigger').item.json.From }}",
+        "subject": "Your Guest Post Submission.",
+        "message": "Hello, <br><br>  Thank you for reaching out with your guest post request.<br><br>  We do accept guest posts, and our publishing fee is <strong>$50 per post.</strong><br> Please share the following details so our editorial team can review your submission:<br><br>  <ol>   <li>Google Docs link to your article</li>   <li>Any images you’d like us to include</li>   <li>The website URL for your backlink</li> </ol>  <p>Once our editorial team reviews your content, we’ll let you know the result.</p> <p>If it meets our standards, we’ll publish it and share the live link with you.</p> <p>If not, we’ll inform you that it doesn’t align with our editorial guidelines.</p><br>  Best regards,<br> Saif<br> [Your Website Name or Brand]",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        144,
+        -80
+      ],
+      "id": "3486b23b-955c-4eaa-83f9-e49bced9823a",
+      "name": "Send a message",
+      "webhookId": "1802129a-df27-4b80-9cd8-f8e387ff88d2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "aoAQECIvZuGQasAE",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        128
+      ],
+      "id": "895a6d89-74bd-42ed-8a2a-1cca22b097eb",
+      "name": "Google Gemini Chat Model"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "",
+  "meta": {
+    "instanceId": "e4311ffea61f9e41801bf83dece67dba6360fbefcb4dd671f47fb588ae7b04e9"
+  },
+  "tags": []
+}
