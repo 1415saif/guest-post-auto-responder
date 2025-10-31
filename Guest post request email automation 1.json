@@ -1,0 +1,214 @@
+{
+  "name": "Guest post request email automation 1",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "readStatus": "unread"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -736,
+        16
+      ],
+      "id": "401bf254-ac2b-4e3a-bbda-2a51b26dede2",
+      "name": "Gmail Trigger",
+      "notesInFlow": false,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "aoAQECIvZuGQasAE",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following email message and determine if it is a guest post request.\n\nIf the email is about guest posting (for example: someone asking to publish their article, requesting backlinks, or offering to write content for your site), respond only with the single lowercase word \"yes\".\n\nIf the email is not about guest posting, respond only with the single lowercase word \"no\".\n\nDo not write anything else — no punctuation, no explanation, no extra words.\n\nEmail content:\n{{ $json.snippet }}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -560,
+        16
+      ],
+      "id": "2f913b2a-f5bd-4b99-b381-c0aae9aadf32",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cbb50460-c634-42d7-898b-59d53bc7f1d3",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -240,
+        16
+      ],
+      "id": "15172a6d-d463-43b7-adea-a904577f9a79",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Gmail Trigger').item.json.From }}",
+        "subject": "Your Guest Post Submission.",
+        "message": "Hello, <br><br>  Thank you for reaching out with your guest post request.<br><br>  We do accept guest posts, and our publishing fee is <strong>$50 per post.</strong><br> Please share the following details so our editorial team can review your submission:<br><br>  <ol>   <li>Google Docs link to your article</li>   <li>Any images you’d like us to include</li>   <li>The website URL for your backlink</li> </ol>  <p>Once our editorial team reviews your content, we’ll let you know the result.</p> <p>If it meets our standards, we’ll publish it and share the live link with you.</p> <p>If not, we’ll inform you that it doesn’t align with our editorial guidelines.</p><br>  Best regards,<br> Saif<br> [Your Website Name or Brand]",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "890f78ba-f499-4ed8-ac55-3459546d4c92",
+      "name": "Send a message",
+      "webhookId": "1802129a-df27-4b80-9cd8-f8e387ff88d2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "aoAQECIvZuGQasAE",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        208
+      ],
+      "id": "0cfd1e04-8eb6-433e-9a74-af75dd321f9f",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "cpgfhWA0mXdmyDVt",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "25ca9b02-43f8-4b05-95c1-9714f17a2ac1",
+      "name": "Mark a message as read",
+      "webhookId": "3fdcb978-c6c9-42f8-b35b-8ebd0261a306",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "aoAQECIvZuGQasAE",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Mark a message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "27e34409-230c-4589-bb5d-2b5a9ed8930a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e4311ffea61f9e41801bf83dece67dba6360fbefcb4dd671f47fb588ae7b04e9"
+  },
+  "id": "crzK8SbJN6mtXIiH",
+  "tags": []
+}
